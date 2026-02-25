@@ -1,0 +1,39 @@
+name: Build rclone for arm5-musl-softfloat
+
+# 触发条件：推送代码、手动触发
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取代码到构建环境
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 设置 Go 环境（rclone 基于 Go 开发）
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'  # 适配 rclone 的 Go 版本，可根据实际调整
+          cache: true
+
+      # 3. 安装 arm5-musl 交叉编译工具链
+      - name: Install arm-linux-musleabi toolchain
+        run: |
+          sudo apt update
+          sudo apt install -y gcc-arm-linux-musleabi g++-arm-linux-musleabi
+
+      # 4. 编译 arm5 软浮点 + musl 静态库版本
+      - name: Build rclone for arm5-musl-softfloat
+        run: |
+          # 设置 Go 交叉编译环境变量
+          export GOOS=linux
+          export GOARCH=arm
+          export GOARM=5          # 指定 arm5 架构
+          export CGO_ENABLED=1    # 启用 CGO 以支持 musl
+          export CC=arm-linux-musleabi-gcc  # arm5 musl 编译器
+          export CXX=arm-linux-musleabi-g++
